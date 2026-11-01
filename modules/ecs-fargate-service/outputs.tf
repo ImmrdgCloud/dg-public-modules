@@ -19,6 +19,6 @@ output "log_group_name" {
 }
 
 output "secret_parameter_arns" {
-  value     = { for name, parameter in module.parameters : name => parameter.arn }
+  value     = { for name, parameter in module.parameters : name => parameter.ssm_parameter_arn }
   sensitive = true
 }

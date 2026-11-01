@@ -80,12 +80,10 @@ module "ecs" {
   version = "~> 5.0"
 
   cluster_name = local.name
-  cluster_settings = {
-    default = {
-      name  = "containerInsights"
-      value = "disabled"
-    }
-  }
+  cluster_settings = [{
+    name  = "containerInsights"
+    value = "disabled"
+  }]
 
   services = {
     service = {
