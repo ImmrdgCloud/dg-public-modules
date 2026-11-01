@@ -2,6 +2,10 @@ locals {
   name = "${var.name_prefix}-${var.team_prefix}-${var.resource_name}"
 }
 
+data "aws_caller_identity" "current" {}
+data "aws_partition" "current" {}
+data "aws_region" "current" {}
+
 module "task_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -87,21 +91,23 @@ module "ecs" {
 
   services = {
     service = {
-      name                      = "${local.name}${var.service_name_suffix}"
-      cpu                       = var.cpu
-      memory                    = var.memory
-      desired_count             = var.desired_count
-      container_definitions     = jsondecode(var.container_definitions)
-      assign_public_ip          = true
-      subnet_ids                = var.public_subnet_ids
-      security_group_ids        = [module.task_security_group.security_group_id]
-      create_security_group     = false
-      create_task_exec_iam_role = true
-      task_exec_iam_role_name   = "${local.name}-execution"
-      task_exec_ssm_param_arns     = [for parameter in module.parameters : parameter.ssm_parameter_arn]
-      create_tasks_iam_role     = true
-      tasks_iam_role_name       = "${local.name}-task"
-      tasks_iam_role_policies   = { for arn in var.task_managed_policy_arns : arn => arn }
+      name                               = "${local.name}${var.service_name_suffix}"
+      cpu                                = var.cpu
+      memory                             = var.memory
+      desired_count                      = var.desired_count
+      container_definitions              = jsondecode(var.container_definitions)
+      assign_public_ip                   = true
+      subnet_ids                         = var.public_subnet_ids
+      security_group_ids                 = [module.task_security_group.security_group_id]
+      create_security_group              = false
+      create_task_exec_iam_role          = true
+      task_exec_iam_role_name            = "${local.name}-execution"
+      task_exec_iam_role_use_name_prefix = false
+      task_exec_ssm_param_arns           = [for parameter in module.parameters : parameter.ssm_parameter_arn]
+      create_tasks_iam_role              = true
+      tasks_iam_role_name                = "${local.name}-task"
+      tasks_iam_role_use_name_prefix     = false
+      tasks_iam_role_policies            = { for arn in var.task_managed_policy_arns : arn => arn }
       load_balancer = var.load_balancer == null ? {} : {
         service = {
           target_group_arn = module.alb.target_groups["service"].arn
