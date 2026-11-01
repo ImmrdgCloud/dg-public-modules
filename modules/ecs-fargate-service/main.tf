@@ -98,7 +98,7 @@ module "ecs" {
       create_security_group     = false
       create_task_exec_iam_role = true
       task_exec_iam_role_name   = "${local.name}-execution"
-      task_exec_ssm_param_arns  = [for parameter in module.parameters : parameter.arn]
+      task_exec_ssm_param_arns     = [for parameter in module.parameters : parameter.ssm_parameter_arn]
       create_tasks_iam_role     = true
       tasks_iam_role_name       = "${local.name}-task"
       tasks_iam_role_policies   = { for arn in var.task_managed_policy_arns : arn => arn }
