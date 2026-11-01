@@ -3,13 +3,18 @@ variable "aws_region" {
   type        = string
 }
 
-variable "account_name" {
-  description = "Account-based prefix for AWS resource names"
+variable "name_prefix" {
+  description = "Organization or account naming prefix"
   type        = string
 }
 
-variable "project" {
-  description = "Project name"
+variable "team_prefix" {
+  description = "Team or deployment naming prefix"
+  type        = string
+}
+
+variable "vpc_name" {
+  description = "Resource-specific VPC name"
   type        = string
 }
 

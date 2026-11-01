@@ -7,6 +7,10 @@ Provider-agnostic Terraform module packages for AWS infrastructure. Every module
 - accepts names, tags, and infrastructure identifiers from the consumer; and
 - is versioned from this repository's `main` branch.
 
+Each module requires `name_prefix`, `team_prefix`, and a resource-specific
+name input. It composes resource names as
+`${name_prefix}-${team_prefix}-${resource_name}`.
+
 Available modules:
 
 - `vpc`: VPC, subnet tiers, route tables, and an S3 gateway endpoint

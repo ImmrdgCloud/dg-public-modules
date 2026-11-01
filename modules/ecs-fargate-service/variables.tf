@@ -1,4 +1,10 @@
-variable "name" { type = string }
+variable "name_prefix" { type = string }
+variable "team_prefix" { type = string }
+variable "service_name" { type = string }
+variable "service_name_suffix" {
+  type    = string
+  default = ""
+}
 variable "service_name" { type = string }
 variable "task_family" { type = string }
 variable "vpc_id" { type = string }

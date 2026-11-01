@@ -1,5 +1,5 @@
 locals {
-  full_name = "${var.account_name}-${var.project}"
+  full_name = "${var.name_prefix}-${var.team_prefix}-${var.vpc_name}"
 
   subnet_tiers = merge({
     public = {
@@ -34,7 +34,7 @@ locals {
 
   common_tags = {
     ManagedBy = "terraform"
-    Project   = var.project
+    Project   = var.vpc_name
   }
 }
 

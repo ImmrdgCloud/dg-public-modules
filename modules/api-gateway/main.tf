@@ -1,5 +1,9 @@
+locals {
+  name = "${var.name_prefix}-${var.team_prefix}-${var.api_name}"
+}
+
 resource "aws_apigatewayv2_api" "this" {
-  name          = var.name
+  name          = local.name
   protocol_type = "HTTP"
   description   = var.description
   tags          = var.tags

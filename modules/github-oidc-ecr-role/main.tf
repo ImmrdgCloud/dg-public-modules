@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+locals {
+  full_role_name = "${var.name_prefix}-${var.team_prefix}-${var.role_name}"
+}
+
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -8,7 +12,7 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 resource "aws_iam_role" "github_actions_ecr" {
-  name = var.role_name
+  name = local.full_role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -31,7 +35,7 @@ resource "aws_iam_role" "github_actions_ecr" {
 }
 
 resource "aws_iam_role_policy" "ecr_publish" {
-  name = "${var.role_name}-publish-${var.ecr_repository}"
+  name = "${local.full_role_name}-publish-${var.ecr_repository}"
   role = aws_iam_role.github_actions_ecr.id
 
   policy = jsonencode({

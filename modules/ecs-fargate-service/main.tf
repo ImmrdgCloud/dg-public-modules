@@ -1,11 +1,12 @@
 locals {
-  task_security_group_name = "${var.name}-sg"
+  name                     = "${var.name_prefix}-${var.team_prefix}-${var.service_name}"
+  task_security_group_name = "${local.name}-sg"
 }
 
 resource "aws_security_group" "alb" {
   count = var.load_balancer == null ? 0 : 1
 
-  name_prefix = "${var.name}-alb-"
+  name_prefix = "${local.name}-alb-"
   description = var.load_balancer.security_group_description
   vpc_id      = var.vpc_id
 
@@ -32,11 +33,11 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(var.tags, { Name = "${var.name}-alb-sg" })
+  tags = merge(var.tags, { Name = "${local.name}-alb-sg" })
 }
 
 resource "aws_security_group" "task" {
-  name_prefix = "${var.name}-${var.task_security_group_prefix}-"
+  name_prefix = "${local.name}-${var.task_security_group_prefix}-"
   description = var.task_security_group_description
   vpc_id      = var.vpc_id
 
@@ -124,7 +125,7 @@ resource "aws_ssm_parameter" "secret" {
 }
 
 resource "aws_iam_role" "execution" {
-  name               = "${var.name}-execution"
+  name               = "${local.name}-execution"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
   tags               = var.tags
 }
@@ -145,7 +146,7 @@ resource "aws_iam_role_policy_attachment" "execution_managed" {
 }
 
 resource "aws_iam_role_policy" "execution_ssm" {
-  name = "${var.name}-${var.execution_ssm_policy_name}"
+  name = "${local.name}-${var.execution_ssm_policy_name}"
   role = aws_iam_role.execution.id
 
   policy = jsonencode({
@@ -159,7 +160,7 @@ resource "aws_iam_role_policy" "execution_ssm" {
 }
 
 resource "aws_iam_role" "task" {
-  name               = "${var.name}-task"
+  name               = "${local.name}-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
   tags               = var.tags
 }
@@ -172,7 +173,7 @@ resource "aws_iam_role_policy_attachment" "task_managed" {
 }
 
 resource "aws_ecs_cluster" "service" {
-  name = var.name
+  name = local.name
 
   setting {
     name  = "containerInsights"
@@ -195,7 +196,7 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 resource "aws_ecs_service" "service" {
-  name            = var.service_name
+  name            = "${local.name}${var.service_name_suffix}"
   cluster         = aws_ecs_cluster.service.id
   task_definition = aws_ecs_task_definition.service.arn
   desired_count   = var.desired_count

@@ -1,5 +1,15 @@
-variable "name" {
-  description = "Name of the HTTP API."
+variable "name_prefix" {
+  description = "Organization or account naming prefix."
+  type        = string
+}
+
+variable "team_prefix" {
+  description = "Team or deployment naming prefix."
+  type        = string
+}
+
+variable "api_name" {
+  description = "Resource-specific HTTP API name."
   type        = string
 }
 
