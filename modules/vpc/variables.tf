@@ -13,7 +13,7 @@ variable "team_prefix" {
   type        = string
 }
 
-variable "vpc_name" {
+variable "resource_name" {
   description = "Resource-specific VPC name"
   type        = string
 }
