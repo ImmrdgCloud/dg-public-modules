@@ -7,9 +7,10 @@ resource "aws_apigatewayv2_api" "this" {
 
 resource "aws_apigatewayv2_integration" "this" {
   api_id                 = aws_apigatewayv2_api.this.id
-  integration_type       = "AWS_PROXY"
+  integration_type       = var.integration_type
   integration_uri        = var.integration_uri
-  payload_format_version = var.payload_format_version
+  integration_method     = var.integration_method
+  payload_format_version = contains(["AWS_PROXY", "HTTP_PROXY"], var.integration_type) ? var.payload_format_version : null
 }
 
 resource "aws_apigatewayv2_route" "this" {

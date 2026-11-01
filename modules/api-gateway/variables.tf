@@ -10,8 +10,20 @@ variable "description" {
 }
 
 variable "integration_uri" {
-  description = "AWS proxy integration URI."
+  description = "Backend integration URI."
   type        = string
+}
+
+variable "integration_type" {
+  description = "API Gateway integration type."
+  type        = string
+  default     = "AWS_PROXY"
+}
+
+variable "integration_method" {
+  description = "HTTP method sent to the backend."
+  type        = string
+  default     = "POST"
 }
 
 variable "route_key" {
@@ -27,7 +39,7 @@ variable "stage_name" {
 }
 
 variable "payload_format_version" {
-  description = "Payload format version for the AWS proxy integration."
+  description = "Payload format version for proxy integrations."
   type        = string
   default     = "2.0"
 }

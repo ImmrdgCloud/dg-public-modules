@@ -1,10 +1,15 @@
 # DG Public Terraform Modules
 
-Reusable AWS modules with caller-supplied names and tags.
+Provider-agnostic Terraform module packages for AWS infrastructure. Every module:
 
-- `vpc`
-- `ecs-fargate-service`
-- `api-gateway`
-- `github-oidc-ecr-role`
+- has no provider configuration;
+- declares its provider requirements and Terraform version;
+- accepts names, tags, and infrastructure identifiers from the consumer; and
+- is versioned from this repository's `main` branch.
 
-Consumers configure providers and reference a module path at the `main` branch.
+Available modules:
+
+- `vpc`: VPC, subnet tiers, route tables, and an S3 gateway endpoint
+- `ecs-fargate-service`: Fargate service with optional public ALB, logs, IAM, SSM secrets, and security groups
+- `api-gateway`: HTTP API, one configurable integration, route, and stage
+- `github-oidc-ecr-role`: GitHub Actions OIDC role for publishing to a caller-selected ECR repository
