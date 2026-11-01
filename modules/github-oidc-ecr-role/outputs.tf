@@ -1,5 +1,5 @@
 output "oidc_provider_arn" {
-  value = data.aws_iam_openid_connect_provider.github_actions.arn
+  value = module.github_actions_provider.arn
 }
 
 output "role_arn" {
