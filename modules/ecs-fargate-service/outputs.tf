@@ -1,24 +1,24 @@
 output "alb_dns_name" {
-  value = try(aws_lb.service[0].dns_name, null)
+  value = try(module.alb.dns_name, null)
 }
 
 output "cluster_name" {
-  value = aws_ecs_cluster.service.name
+  value = module.ecs.cluster_name
 }
 
 output "service_name" {
-  value = aws_ecs_service.service.name
+  value = module.ecs.services["service"].name
 }
 
 output "task_security_group_id" {
-  value = aws_security_group.task.id
+  value = module.task_security_group.security_group_id
 }
 
 output "log_group_name" {
-  value = aws_cloudwatch_log_group.service.name
+  value = var.log_group_name
 }
 
 output "secret_parameter_arns" {
-  value     = { for name, parameter in aws_ssm_parameter.secret : name => parameter.arn }
+  value     = { for name, parameter in module.parameters : name => parameter.arn }
   sensitive = true
 }

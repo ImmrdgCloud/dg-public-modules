@@ -1,11 +1,10 @@
 variable "name_prefix" { type = string }
 variable "team_prefix" { type = string }
-variable "service_name" { type = string }
+variable "resource_name" { type = string }
 variable "service_name_suffix" {
   type    = string
   default = ""
 }
-variable "task_family" { type = string }
 variable "vpc_id" { type = string }
 variable "public_subnet_ids" { type = list(string) }
 variable "cpu" { type = number }

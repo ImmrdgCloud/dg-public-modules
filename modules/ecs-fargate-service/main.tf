@@ -1,221 +1,117 @@
 locals {
-  name                     = "${var.name_prefix}-${var.team_prefix}-${var.service_name}"
-  task_security_group_name = "${local.name}-sg"
+  name = "${var.name_prefix}-${var.team_prefix}-${var.resource_name}"
 }
 
-resource "aws_security_group" "alb" {
-  count = var.load_balancer == null ? 0 : 1
+module "task_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
 
-  name_prefix = "${local.name}-alb-"
-  description = var.load_balancer.security_group_description
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "HTTP"
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "HTTPS"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(var.tags, { Name = "${local.name}-alb-sg" })
+  name         = "${local.name}-${var.task_security_group_prefix}-sg"
+  description  = var.task_security_group_description
+  vpc_id       = var.vpc_id
+  egress_rules = ["all-all"]
+  ingress_with_source_security_group_id = var.load_balancer == null ? [] : [{
+    rule                     = "tcp-${var.load_balancer.container_port}"
+    source_security_group_id = module.alb_security_group.security_group_id
+    description              = var.load_balancer.task_ingress_description
+  }]
+  tags = var.tags
 }
 
-resource "aws_security_group" "task" {
-  name_prefix = "${local.name}-${var.task_security_group_prefix}-"
-  description = var.task_security_group_description
-  vpc_id      = var.vpc_id
+module "alb_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+  create  = var.load_balancer != null
 
-  dynamic "ingress" {
-    for_each = var.load_balancer == null ? [] : [var.load_balancer]
-    content {
-      from_port       = ingress.value.container_port
-      to_port         = ingress.value.container_port
-      protocol        = "tcp"
-      security_groups = [aws_security_group.alb[0].id]
-      description     = ingress.value.task_ingress_description
-    }
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = var.task_egress_description
-  }
-
-  tags = merge(var.tags, { Name = local.task_security_group_name })
+  name                = "${local.name}-alb-sg"
+  description         = try(var.load_balancer.security_group_description, null)
+  vpc_id              = var.vpc_id
+  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules        = ["all-all"]
+  tags                = var.tags
 }
 
-resource "aws_lb" "service" {
-  count = var.load_balancer == null ? 0 : 1
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "~> 9.0"
+  create  = var.load_balancer != null
 
-  name               = var.load_balancer.name
-  internal           = false
+  name               = try(var.load_balancer.name, null)
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb[0].id]
+  vpc_id             = var.vpc_id
   subnets            = var.public_subnet_ids
-
+  security_groups    = [module.alb_security_group.security_group_id]
+  target_groups = {
+    service = {
+      name_prefix       = substr(try(var.load_balancer.target_group_name, "service"), 0, 6)
+      protocol          = "HTTP"
+      port              = try(var.load_balancer.container_port, 80)
+      target_type       = "ip"
+      create_attachment = false
+      health_check = {
+        path = try(var.load_balancer.health_check_path, "/")
+      }
+    }
+  }
+  listeners = {
+    http = {
+      port     = 80
+      protocol = "HTTP"
+      forward  = { target_group_key = "service" }
+    }
+  }
   tags = var.tags
 }
 
-resource "aws_lb_target_group" "service" {
-  count = var.load_balancer == null ? 0 : 1
+module "parameters" {
+  source  = "terraform-aws-modules/ssm-parameter/aws"
+  version = "~> 1.0"
 
-  name        = var.load_balancer.target_group_name
-  port        = var.load_balancer.container_port
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = var.load_balancer.health_check_path
-    port                = tostring(var.load_balancer.container_port)
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    interval            = 30
-    timeout             = 5
-  }
-
-  tags = var.tags
-}
-
-resource "aws_lb_listener" "http" {
-  count = var.load_balancer == null ? 0 : 1
-
-  load_balancer_arn = aws_lb.service[0].arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.service[0].arn
-  }
-}
-
-resource "aws_cloudwatch_log_group" "service" {
-  name              = var.log_group_name
-  retention_in_days = var.log_retention_days
-  tags              = var.tags
-}
-
-resource "aws_ssm_parameter" "secret" {
   for_each = var.secret_parameter_names
-
-  name  = each.value
-  type  = "SecureString"
-  value = var.secret_parameter_values[each.key]
-  tags  = var.tags
+  name     = each.value
+  value    = var.secret_parameter_values[each.key]
+  type     = "SecureString"
+  tags     = var.tags
 }
 
-resource "aws_iam_role" "execution" {
-  name               = "${local.name}-execution"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
-  tags               = var.tags
-}
+module "ecs" {
+  source  = "terraform-aws-modules/ecs/aws"
+  version = "~> 5.0"
 
-data "aws_iam_policy_document" "ecs_task_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "execution_managed" {
-  role       = aws_iam_role.execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_iam_role_policy" "execution_ssm" {
-  name = "${local.name}-${var.execution_ssm_policy_name}"
-  role = aws_iam_role.execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["ssm:GetParameters"]
-      Resource = [for parameter in aws_ssm_parameter.secret : parameter.arn]
-    }]
-  })
-}
-
-resource "aws_iam_role" "task" {
-  name               = "${local.name}-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
-  tags               = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "task_managed" {
-  for_each = toset(var.task_managed_policy_arns)
-
-  role       = aws_iam_role.task.name
-  policy_arn = each.value
-}
-
-resource "aws_ecs_cluster" "service" {
-  name = local.name
-
-  setting {
-    name  = "containerInsights"
-    value = "disabled"
-  }
-
-  tags = var.tags
-}
-
-resource "aws_ecs_task_definition" "service" {
-  family                   = var.task_family
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.cpu
-  memory                   = var.memory
-  execution_role_arn       = aws_iam_role.execution.arn
-  task_role_arn            = aws_iam_role.task.arn
-  container_definitions    = var.container_definitions
-  tags                     = var.tags
-}
-
-resource "aws_ecs_service" "service" {
-  name            = "${local.name}${var.service_name_suffix}"
-  cluster         = aws_ecs_cluster.service.id
-  task_definition = aws_ecs_task_definition.service.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = var.public_subnet_ids
-    security_groups  = [aws_security_group.task.id]
-    assign_public_ip = true
-  }
-
-  dynamic "load_balancer" {
-    for_each = var.load_balancer == null ? [] : [var.load_balancer]
-    content {
-      target_group_arn = aws_lb_target_group.service[0].arn
-      container_name   = load_balancer.value.container_name
-      container_port   = load_balancer.value.container_port
+  cluster_name = local.name
+  cluster_settings = {
+    default = {
+      name  = "containerInsights"
+      value = "disabled"
     }
   }
 
+  services = {
+    service = {
+      name                      = "${local.name}${var.service_name_suffix}"
+      cpu                       = var.cpu
+      memory                    = var.memory
+      desired_count             = var.desired_count
+      container_definitions     = jsondecode(var.container_definitions)
+      assign_public_ip          = true
+      subnet_ids                = var.public_subnet_ids
+      security_group_ids        = [module.task_security_group.security_group_id]
+      create_security_group     = false
+      create_task_exec_iam_role = true
+      task_exec_iam_role_name   = "${local.name}-execution"
+      task_exec_ssm_param_arns  = [for parameter in module.parameters : parameter.arn]
+      create_tasks_iam_role     = true
+      tasks_iam_role_name       = "${local.name}-task"
+      tasks_iam_role_policies   = { for arn in var.task_managed_policy_arns : arn => arn }
+      load_balancer = var.load_balancer == null ? {} : {
+        service = {
+          target_group_arn = module.alb.target_groups["service"].arn
+          container_name   = var.load_balancer.container_name
+          container_port   = var.load_balancer.container_port
+        }
+      }
+    }
+  }
   tags = var.tags
 }

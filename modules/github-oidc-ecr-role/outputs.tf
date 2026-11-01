@@ -1,7 +1,7 @@
 output "oidc_provider_arn" {
-  value = aws_iam_openid_connect_provider.github_actions.arn
+  value = data.aws_iam_openid_connect_provider.github_actions.arn
 }
 
 output "role_arn" {
-  value = aws_iam_role.github_actions_ecr.arn
+  value = module.github_actions_role.arn
 }

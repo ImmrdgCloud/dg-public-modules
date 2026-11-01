@@ -8,7 +8,7 @@ variable "team_prefix" {
   type        = string
 }
 
-variable "api_name" {
+variable "resource_name" {
   description = "Resource-specific HTTP API name."
   type        = string
 }
