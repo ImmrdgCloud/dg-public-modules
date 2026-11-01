@@ -115,11 +115,11 @@ resource "aws_cloudwatch_log_group" "service" {
 }
 
 resource "aws_ssm_parameter" "secret" {
-  for_each = var.secret_parameters
+  for_each = toset(keys(nonsensitive(var.secret_parameters)))
 
-  name  = each.value.name
+  name  = var.secret_parameters[each.value].name
   type  = "SecureString"
-  value = each.value.value
+  value = var.secret_parameters[each.value].value
   tags  = var.tags
 }
 
