@@ -26,11 +26,12 @@ variable "task_managed_policy_arns" {
   type    = list(string)
   default = []
 }
-variable "secret_parameters" {
-  type = map(object({
-    name  = string
-    value = string
-  }))
+variable "secret_parameter_names" {
+  type    = map(string)
+  default = {}
+}
+variable "secret_parameter_values" {
+  type      = map(string)
   default   = {}
   sensitive = true
 }
