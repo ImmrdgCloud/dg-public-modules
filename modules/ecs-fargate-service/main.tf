@@ -2,10 +2,6 @@ locals {
   name = "${var.name_prefix}-${var.team_prefix}-${var.resource_name}"
 }
 
-data "aws_caller_identity" "current" {}
-data "aws_partition" "current" {}
-data "aws_region" "current" {}
-
 module "task_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -68,17 +64,6 @@ module "alb" {
   tags = var.tags
 }
 
-module "parameters" {
-  source  = "terraform-aws-modules/ssm-parameter/aws"
-  version = "~> 1.0"
-
-  for_each = var.secret_parameter_names
-  name     = each.value
-  value    = var.secret_parameter_values[each.key]
-  type     = "SecureString"
-  tags     = var.tags
-}
-
 module "ecs" {
   source  = "terraform-aws-modules/ecs/aws"
   version = "~> 5.0"
@@ -103,7 +88,7 @@ module "ecs" {
       create_task_exec_iam_role          = true
       task_exec_iam_role_name            = "${local.name}-execution"
       task_exec_iam_role_use_name_prefix = false
-      task_exec_ssm_param_arns           = [for parameter in module.parameters : parameter.ssm_parameter_arn]
+      task_exec_ssm_param_arns           = var.ssm_parameter_arns
       create_tasks_iam_role              = true
       tasks_iam_role_name                = "${local.name}-task"
       tasks_iam_role_use_name_prefix     = false

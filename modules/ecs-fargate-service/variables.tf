@@ -25,14 +25,9 @@ variable "task_managed_policy_arns" {
   type    = list(string)
   default = []
 }
-variable "secret_parameter_names" {
-  type    = map(string)
-  default = {}
-}
-variable "secret_parameter_values" {
-  type      = map(string)
-  default   = {}
-  sensitive = true
+variable "ssm_parameter_arns" {
+  type    = list(string)
+  default = []
 }
 variable "load_balancer" {
   type = object({
