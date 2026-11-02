@@ -11,7 +11,9 @@ module "task_security_group" {
   vpc_id       = var.vpc_id
   egress_rules = ["all-all"]
   ingress_with_source_security_group_id = var.load_balancer == null ? [] : [{
-    rule                     = "tcp-${var.load_balancer.container_port}"
+    from_port                = var.load_balancer.container_port
+    to_port                  = var.load_balancer.container_port
+    protocol                 = "tcp"
     source_security_group_id = module.alb_security_group.security_group_id
     description              = var.load_balancer.task_ingress_description
   }]
