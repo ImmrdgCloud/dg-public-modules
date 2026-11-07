@@ -2,6 +2,11 @@ variable "name_prefix" { type = string }
 variable "team_prefix" { type = string }
 variable "resource_name" { type = string }
 
+variable "service_role_arn" {
+  description = "ARN of the IAM role CodeBuild will assume. Create this role outside the module (e.g. in a dedicated Roles stack) and pass the ARN here."
+  type        = string
+}
+
 variable "dockerfile_content" {
   description = "Raw Dockerfile text to build. Terraform base64-encodes this and injects it into the CodeBuild buildspec as an environment variable — no source repo or GitHub auth required."
   type        = string

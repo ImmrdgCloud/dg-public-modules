@@ -18,7 +18,4 @@ output "codebuild_project_name" {
   value       = aws_codebuild_project.this.name
 }
 
-output "codebuild_role_arn" {
-  description = "ARN of the IAM role assumed by CodeBuild."
-  value       = aws_iam_role.codebuild.arn
-}
+

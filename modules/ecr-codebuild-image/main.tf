@@ -68,76 +68,14 @@ resource "aws_ecr_lifecycle_policy" "this" {
   })
 }
 
-# ── IAM Role for CodeBuild ────────────────────────────────────────────────────
-
-data "aws_iam_policy_document" "codebuild_assume" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["codebuild.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "codebuild" {
-  name               = "${local.name}-codebuild"
-  assume_role_policy = data.aws_iam_policy_document.codebuild_assume.json
-  tags               = var.tags
-}
-
-data "aws_iam_policy_document" "codebuild_policy" {
-  statement {
-    sid    = "CloudWatchLogs"
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-    resources = [
-      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/${local.name}",
-      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/${local.name}:*",
-    ]
-  }
-
-  statement {
-    sid       = "EcrAuth"
-    effect    = "Allow"
-    actions   = ["ecr:GetAuthorizationToken"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "EcrPush"
-    effect = "Allow"
-    actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:BatchGetImage",
-      "ecr:CompleteLayerUpload",
-      "ecr:DescribeImages",
-      "ecr:InitiateLayerUpload",
-      "ecr:PutImage",
-      "ecr:UploadLayerPart",
-    ]
-    resources = [aws_ecr_repository.this.arn]
-  }
-}
-
-resource "aws_iam_role_policy" "codebuild" {
-  name   = "${local.name}-codebuild-policy"
-  role   = aws_iam_role.codebuild.id
-  policy = data.aws_iam_policy_document.codebuild_policy.json
-}
-
 # ── CodeBuild Project ─────────────────────────────────────────────────────────
 
 resource "aws_codebuild_project" "this" {
   name          = local.name
   description   = "Build and push ${var.resource_name} Docker image to ECR (NO_SOURCE — Dockerfile is inline)"
   build_timeout = var.build_timeout_minutes
-  service_role  = aws_iam_role.codebuild.arn
+  # IAM role is managed outside this module; pass the ARN via service_role_arn.
+  service_role  = var.service_role_arn
 
   artifacts {
     type = "NO_ARTIFACTS"
