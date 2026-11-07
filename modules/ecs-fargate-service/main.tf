@@ -82,7 +82,7 @@ module "ecs" {
       cpu                                = var.cpu
       memory                             = var.memory
       desired_count                      = var.desired_count
-      container_definitions              = jsondecode(var.container_definitions)
+      container_definitions              = var.container_definitions
       assign_public_ip                   = true
       subnet_ids                         = var.public_subnet_ids
       security_group_ids                 = [module.task_security_group.security_group_id]

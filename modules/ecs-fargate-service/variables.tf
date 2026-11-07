@@ -10,7 +10,10 @@ variable "public_subnet_ids" { type = list(string) }
 variable "cpu" { type = number }
 variable "memory" { type = number }
 variable "desired_count" { type = number }
-variable "container_definitions" { type = string }
+variable "container_definitions" {
+  description = "Container definitions keyed by stable caller-chosen names."
+  type        = map(any)
+}
 variable "log_group_name" { type = string }
 variable "log_retention_days" { type = number }
 variable "execution_ssm_policy_name" { type = string }
