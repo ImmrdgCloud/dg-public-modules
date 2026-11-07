@@ -11,8 +11,34 @@ variable "cpu" { type = number }
 variable "memory" { type = number }
 variable "desired_count" { type = number }
 variable "container_definition" {
-  description = "Single container definition; the wrapper supplies the stable upstream key."
-  type        = any
+  description = "Single ECS container definition. The wrapper supplies the stable upstream key and creation flag."
+  type = object({
+    name                     = string
+    image                    = string
+    essential                = optional(bool, true)
+    command                  = optional(list(string))
+    entrypoint               = optional(list(string))
+    cpu                      = optional(number)
+    memory                   = optional(number)
+    memory_reservation       = optional(number)
+    readonly_root_filesystem = optional(bool)
+    working_directory        = optional(string)
+    user                     = optional(string)
+    port_mappings            = optional(list(any), [])
+    environment              = optional(list(object({ name = string, value = string })), [])
+    secrets                  = optional(list(object({ name = string, valueFrom = string })), [])
+    log_configuration        = optional(any, {})
+    health_check             = optional(any)
+    linux_parameters         = optional(any)
+    mount_points             = optional(list(any), [])
+    volumes_from             = optional(list(any), [])
+    depends_on               = optional(list(any), [])
+    docker_labels            = optional(map(string), {})
+    system_controls          = optional(list(any), [])
+    ulimits                  = optional(list(any), [])
+    repository_credentials   = optional(any)
+    firelens_configuration   = optional(any)
+  })
 }
 variable "log_group_name" { type = string }
 variable "log_retention_days" { type = number }
