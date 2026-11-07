@@ -66,8 +66,8 @@ module "alb" {
   tags = var.tags
 }
 
-module "ecs" {
-  source  = "terraform-aws-modules/ecs/aws"
+module "cluster" {
+  source  = "terraform-aws-modules/ecs/aws//modules/cluster"
   version = "~> 5.0"
 
   cluster_name = local.name
@@ -75,62 +75,66 @@ module "ecs" {
     name  = "containerInsights"
     value = "disabled"
   }]
+  tags = var.tags
+}
 
-  services = {
+module "service" {
+  source  = "terraform-aws-modules/ecs/aws//modules/service"
+  version = "~> 5.0"
+
+  name          = "${local.name}${var.service_name_suffix}"
+  cluster_arn   = module.cluster.arn
+  cpu           = var.cpu
+  memory        = var.memory
+  desired_count = var.desired_count
+
+  container_definitions = {
+    main = {
+      create                   = true
+      name                     = var.container_definition.name
+      image                    = var.container_definition.image
+      essential                = var.container_definition.essential
+      command                  = var.container_definition.command
+      entrypoint               = var.container_definition.entrypoint
+      cpu                      = var.container_definition.cpu
+      memory                   = var.container_definition.memory
+      memory_reservation       = var.container_definition.memory_reservation
+      readonly_root_filesystem = var.container_definition.readonly_root_filesystem
+      working_directory        = var.container_definition.working_directory
+      user                     = var.container_definition.user
+      port_mappings            = var.container_definition.port_mappings
+      environment              = var.container_definition.environment
+      secrets                  = var.container_definition.secrets
+      log_configuration        = var.container_definition.log_configuration
+      health_check             = var.container_definition.health_check
+      linux_parameters         = var.container_definition.linux_parameters
+      mount_points             = var.container_definition.mount_points
+      volumes_from             = var.container_definition.volumes_from
+      depends_on               = var.container_definition.depends_on
+      docker_labels            = var.container_definition.docker_labels
+      system_controls          = var.container_definition.system_controls
+      ulimits                  = var.container_definition.ulimits
+      repository_credentials   = var.container_definition.repository_credentials
+      firelens_configuration   = var.container_definition.firelens_configuration
+    }
+  }
+  assign_public_ip                   = true
+  subnet_ids                         = var.public_subnet_ids
+  security_group_ids                 = [module.task_security_group.security_group_id]
+  create_security_group              = false
+  create_task_exec_iam_role          = true
+  task_exec_iam_role_name            = "${local.name}-execution"
+  task_exec_iam_role_use_name_prefix = false
+  task_exec_ssm_param_arns           = var.ssm_parameter_arns
+  create_tasks_iam_role              = true
+  tasks_iam_role_name                = "${local.name}-task"
+  tasks_iam_role_use_name_prefix     = false
+  tasks_iam_role_policies            = { for arn in var.task_managed_policy_arns : arn => arn }
+  load_balancer = var.load_balancer == null ? {} : {
     service = {
-      name          = "${local.name}${var.service_name_suffix}"
-      cpu           = var.cpu
-      memory        = var.memory
-      desired_count = var.desired_count
-      container_definitions = {
-        main = {
-          create                   = true
-          name                     = var.container_definition.name
-          image                    = var.container_definition.image
-          essential                = var.container_definition.essential
-          command                  = var.container_definition.command
-          entrypoint               = var.container_definition.entrypoint
-          cpu                      = var.container_definition.cpu
-          memory                   = var.container_definition.memory
-          memory_reservation       = var.container_definition.memory_reservation
-          readonly_root_filesystem = var.container_definition.readonly_root_filesystem
-          working_directory        = var.container_definition.working_directory
-          user                     = var.container_definition.user
-          port_mappings            = var.container_definition.port_mappings
-          environment              = var.container_definition.environment
-          secrets                  = var.container_definition.secrets
-          log_configuration        = var.container_definition.log_configuration
-          health_check             = var.container_definition.health_check
-          linux_parameters         = var.container_definition.linux_parameters
-          mount_points             = var.container_definition.mount_points
-          volumes_from             = var.container_definition.volumes_from
-          depends_on               = var.container_definition.depends_on
-          docker_labels            = var.container_definition.docker_labels
-          system_controls          = var.container_definition.system_controls
-          ulimits                  = var.container_definition.ulimits
-          repository_credentials   = var.container_definition.repository_credentials
-          firelens_configuration   = var.container_definition.firelens_configuration
-        }
-      }
-      assign_public_ip                   = true
-      subnet_ids                         = var.public_subnet_ids
-      security_group_ids                 = [module.task_security_group.security_group_id]
-      create_security_group              = false
-      create_task_exec_iam_role          = true
-      task_exec_iam_role_name            = "${local.name}-execution"
-      task_exec_iam_role_use_name_prefix = false
-      task_exec_ssm_param_arns           = var.ssm_parameter_arns
-      create_tasks_iam_role              = true
-      tasks_iam_role_name                = "${local.name}-task"
-      tasks_iam_role_use_name_prefix     = false
-      tasks_iam_role_policies            = { for arn in var.task_managed_policy_arns : arn => arn }
-      load_balancer = var.load_balancer == null ? {} : {
-        service = {
-          target_group_arn = module.alb.target_groups["service"].arn
-          container_name   = var.load_balancer.container_name
-          container_port   = var.load_balancer.container_port
-        }
-      }
+      target_group_arn = module.alb.target_groups["service"].arn
+      container_name   = var.load_balancer.container_name
+      container_port   = var.load_balancer.container_port
     }
   }
   tags = var.tags

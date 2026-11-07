@@ -16,8 +16,8 @@ variable "container_definition" {
     name                     = string
     image                    = string
     essential                = optional(bool, true)
-    command                  = optional(list(string))
-    entrypoint               = optional(list(string))
+    command                  = optional(list(string), [])
+    entrypoint               = optional(list(string), [])
     cpu                      = optional(number)
     memory                   = optional(number)
     memory_reservation       = optional(number)
@@ -28,16 +28,16 @@ variable "container_definition" {
     environment              = optional(list(object({ name = string, value = string })), [])
     secrets                  = optional(list(object({ name = string, valueFrom = string })), [])
     log_configuration        = optional(any, {})
-    health_check             = optional(any)
-    linux_parameters         = optional(any)
+    health_check             = optional(any, {})
+    linux_parameters         = optional(any, {})
     mount_points             = optional(list(any), [])
     volumes_from             = optional(list(any), [])
     depends_on               = optional(list(any), [])
     docker_labels            = optional(map(string), {})
     system_controls          = optional(list(any), [])
     ulimits                  = optional(list(any), [])
-    repository_credentials   = optional(any)
-    firelens_configuration   = optional(any)
+    repository_credentials   = optional(any, {})
+    firelens_configuration   = optional(any, {})
   })
 }
 variable "log_group_name" { type = string }

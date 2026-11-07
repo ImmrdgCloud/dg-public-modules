@@ -3,11 +3,11 @@ output "alb_dns_name" {
 }
 
 output "cluster_name" {
-  value = module.ecs.cluster_name
+  value = module.cluster.name
 }
 
 output "service_name" {
-  value = module.ecs.services["service"].name
+  value = module.service.name
 }
 
 output "task_security_group_id" {
