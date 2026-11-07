@@ -78,11 +78,13 @@ module "ecs" {
 
   services = {
     service = {
-      name                               = "${local.name}${var.service_name_suffix}"
-      cpu                                = var.cpu
-      memory                             = var.memory
-      desired_count                      = var.desired_count
-      container_definitions              = var.container_definitions
+      name          = "${local.name}${var.service_name_suffix}"
+      cpu           = var.cpu
+      memory        = var.memory
+      desired_count = var.desired_count
+      container_definitions = {
+        main = merge({ create = true }, var.container_definition)
+      }
       assign_public_ip                   = true
       subnet_ids                         = var.public_subnet_ids
       security_group_ids                 = [module.task_security_group.security_group_id]

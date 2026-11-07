@@ -10,9 +10,9 @@ variable "public_subnet_ids" { type = list(string) }
 variable "cpu" { type = number }
 variable "memory" { type = number }
 variable "desired_count" { type = number }
-variable "container_definitions" {
-  description = "Container definitions keyed by stable caller-chosen names."
-  type        = map(any)
+variable "container_definition" {
+  description = "Single container definition; the wrapper supplies the stable upstream key."
+  type        = any
 }
 variable "log_group_name" { type = string }
 variable "log_retention_days" { type = number }
